@@ -1,6 +1,6 @@
 //use std::error::Error;
 use crate::FixUpKind::{Const16HI, Const16LO, PcRel16};
-use crate::InstFormat::{FromatBO, FormatR, FormatRI, FormatRRI};
+use crate::InstFormat::{FormatBO, FormatR, FormatRI, FormatRRI};
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -74,19 +74,19 @@ pub enum InstFormat {
     FormatR,
     FormatRRI,
     FormatRI,
-    FromatBO,
+    FormatBO,
 }
 
 const INSTR_COUNT: usize = 9;
 static INSTRUCTIONS: [(&str, u8, InstFormat); INSTR_COUNT] = [
     ("add", 0b0000_0000, FormatR),
     ("addi", 0b0000_0001, FormatRRI),
-    ("div", 0b0000_0000, FormatR),
-    ("ldw", 0b0000_0010, FromatBO),
+    ("div", 0b0000_1000, FormatR),
+    ("ldw", 0b0000_0010, FormatBO),
     ("jne", 0b0000_0011, FormatRRI),
     ("movh", 0b0000_0100, FormatRI),
     ("mul", 0b0000_0111, FormatR),
-    ("stw", 0b0000_0101, FromatBO),
+    ("stw", 0b0000_0101, FormatBO),
     ("xor", 0b0000_0110, FormatR),
 ];
 
@@ -326,7 +326,7 @@ pub fn parse_instruction(inst: &str, as_ctx: &mut ASContext) -> u32 {
         FormatR => opcode = get_encoding_type_r(inst_index, operands, as_ctx),
         FormatRRI => opcode = get_encoding_type_rri(inst_index, &mut operands, as_ctx),
         FormatRI => opcode = get_encoding_type_ri(inst_index, &mut operands, as_ctx),
-        FromatBO => opcode = get_encoding_type_m(inst_index, operands, as_ctx),
+        FormatBO => opcode = get_encoding_type_m(inst_index, operands, as_ctx),
     }
     as_ctx.current_inst_address += 4;
     opcode
@@ -607,7 +607,7 @@ pub fn emulate_program(program: &Vec<u32>, as_ctx: ASContext) {
                     ),
                 }
             }
-            FromatBO => {
+            FormatBO => {
                 let dest_src = ((instruction >> 12) & 0xf) as usize;
                 let base = ((instruction >> 8) & 0xf) as usize;
                 let offset = (((instruction >> 16) & 0xffff) as i16) as i32;
@@ -622,7 +622,7 @@ pub fn emulate_program(program: &Vec<u32>, as_ctx: ASContext) {
                             reg_bank[dest_src]
                     }
                     _ => panic!(
-                        "Unknown FromatBO instruction: {}",
+                        "Unknown FormatBO instruction: {}",
                         INSTRUCTIONS[inst_index].0
                     ),
                 }
